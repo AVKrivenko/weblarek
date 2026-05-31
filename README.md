@@ -98,3 +98,127 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+
+# Данные 
+
+ В приложении используются две сущности, которые описывают данные, — товар и покупатель
+
+ Товар:
+
+ IProduct - интерфейс, описывающий сущность товара
+
+ interface IProduct {
+  id: string, - id товара
+  title: string, - название товара
+  image: string, - картинка товара
+  price: number | null, - цена товара| нельзя купить 
+  description: string - развернутое описание товара
+}
+
+Покупатель: 
+
+IBuyer - интерфейс, описывающий сущность покупателя
+
+interface IBuyer {
+payment: TPaymentType | '', - способ оплаты (сard| cash| "")
+address: string, - адрес доставки
+email: string, - email покупателя
+phone: string - номер телефона покупателя
+}
+
+
+
+# Модели данных 
+
+
+Для учёта данных в приложении используются три класса, разделённые по смыслу и зонам ответственности.
+
+Модели данных
+ProductsCatalog — каталог товаров
+Назначение: хранение всех товаров и выбранного для просмотра товара.
+
+**Поля класса:**
+
+_products: IProduct[] — массив всех товаров
+
+_selectedProduct: IProduct | null — выбранный товар
+
+**Методы класса:**
+
+setProducts(products: IProduct[]): void — сохранить массив товаров
+
+getProducts(): IProduct[] — получить все товары
+
+getProductById(id: string): IProduct | undefined — найти товар по id
+
+setSelectedProduct(product: IProduct | null): void — сохранить выбранный товар
+
+getSelectedProduct(): IProduct | null — получить выбранный товар
+
+Cart — корзина
+Назначение: хранение товаров, выбранных для покупки.
+
+**Поля класса:**
+
+_items: IProduct[] — товары в корзине
+
+**Методы класса:**
+
+getItems(): IProduct[] — получить все товары
+
+addItem(product: IProduct): void — добавить товар
+
+removeItem(product: IProduct): void — удалить товар
+
+clear(): void — очистить корзину
+
+getTotalPrice(): number — общая стоимость
+
+getTotalCount(): number — количество товаров
+
+hasProductId(id: string): boolean — проверить наличие товара
+
+BuyerModel — данные покупателя
+Назначение: хранение и валидация данных покупателя.
+
+**Поля класса:**
+
+_payment: TPayment | null — способ оплаты
+
+_address: string — адрес
+
+_phone: string — телефон
+
+_email: string — email
+
+**Методы класса:**
+
+setData(data: Partial<IBuyer>): void — частичное обновление данных
+
+getAllData(): IBuyer — получить все данные
+
+clear(): void — очистить данные
+
+validate(): Partial<Record<keyof IBuyer, string>> — валидация можешь переписать для фала readme
+
+
+ # Слои коммуникации 
+
+### Класс `AppApi` — работа с сервером
+
+**Назначение и зона ответственности класса:**  
+Класс отвечает за взаимодействие с API сервера «веб-ларёк». Он использует композицию — принимает в конструктор объект, соответствующий интерфейсу `IApi`, и использует его методы `get` и `post` для выполнения запросов.
+
+**Конструктор класса:**
+
+- `constructor(api: IApi)` — принимает объект с методами `get` и `post` для работы с HTTP-запросами.
+
+**Поля класса:**
+
+- `protected _api: IApi` — хранит объект API, предоставляющий методы `get` и `post` для взаимодействия с сервером.
+
+**Методы класса:**
+
+- `getProducts(): Promise<IProductsResponse>` — выполняет GET-запрос на эндпоинт `/product/` и возвращает Promise с объектом, содержащим массив товаров (поле `items`) и общее количество (поле `total`).
+
+- `postOrder(orderData: IOrderData): Promise<IOrderResponse>` — выполняет POST-запрос на эндпоинт `/order/` и передаёт в него данные заказа, полученные в параметре. Возвращает Promise с объектом, подтверждающим покупку (содержит `id` заказа и `total` сумму).
