@@ -79,7 +79,7 @@ Presenter - презентер содержит основную логику п
 Поля класса:  
 `baseUrl: string` - базовый адрес сервера  
 `options: RequestInit` - объект с заголовками, которые будут использованы для запросов.
-
+32
 Методы:  
 `get(uri: string): Promise<object>` - выполняет GET запрос на переданный в параметрах ендпоинт и возвращает промис с объектом, которым ответил сервер  
 `post(uri: string, data: object, method: ApiPostMethods = 'POST'): Promise<object>` - принимает объект с данными, которые будут переданы в JSON в теле запроса, и отправляет эти данные на ендпоинт переданный как параметр при вызове метода. По умолчанию выполняется `POST` запрос, но метод запроса может быть переопределен заданием третьего параметра при вызове.  
@@ -120,7 +120,7 @@ Presenter - презентер содержит основную логику п
 IBuyer - интерфейс, описывающий сущность покупателя
 
 interface IBuyer {
-payment: TPaymentType | '', - способ оплаты (сard| cash| "")
+payment: TPaymentType | null , - способ оплаты (сard| cash)
 address: string, - адрес доставки
 email: string, - email покупателя
 phone: string - номер телефона покупателя
@@ -139,9 +139,9 @@ ProductsCatalog — каталог товаров
 
 **Поля класса:**
 
-_products: IProduct[] — массив всех товаров
+products: IProduct[] — массив всех товаров
 
-_selectedProduct: IProduct | null — выбранный товар
+selectedProduct: IProduct | null — выбранный товар
 
 **Методы класса:**
 
@@ -160,7 +160,7 @@ Cart — корзина
 
 **Поля класса:**
 
-_items: IProduct[] — товары в корзине
+items: IProduct[] — товары в корзине
 
 **Методы класса:**
 
@@ -183,13 +183,13 @@ BuyerModel — данные покупателя
 
 **Поля класса:**
 
-_payment: TPayment | null — способ оплаты
+payment: TPayment | null — способ оплаты
 
-_address: string — адрес
+address: string — адрес
 
-_phone: string — телефон
+phone: string — телефон
 
-_email: string — email
+email: string — email
 
 **Методы класса:**
 
