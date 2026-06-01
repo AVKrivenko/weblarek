@@ -1,32 +1,43 @@
 import './scss/styles.scss';
 
 // Импортируем классы моделей
-import { ProductsCatalog } from './components/base/Models/ProductsCatalog' ;
-import { Cart } from './components/base/Models/Cart';
-import { BuyerModel } from './components/base/Models/BuyerModel';
+import { ProductsCatalog } from './components/Models/ProductsCatalog' ;
+import { Cart } from './components/Models/Cart';
+import { BuyerModel } from './components/Models/BuyerModel';
 import { Api } from './components/base/Api';
 import { AppApi } from './components/AppApi';
 import { API_URL } from './utils/constants';
+import { apiProducts } from './utils/data';
 
-// ========== 1. СОЗДАНИЕ МОДЕЛЕЙ ДАННЫХ ==========
-console.log('========== ИНИЦИАЛИЗАЦИЯ МОДЕЛЕЙ ==========');
 
-// Создаём экземпляры моделей
 const catalog = new ProductsCatalog();
 const cart = new Cart();
 const buyer = new BuyerModel();
 
-console.log('Модели данных созданы:');
-console.log('- Каталог (пустой):', catalog.getProducts());
-console.log('- Корзина (пустая):', cart.getItems());
-console.log('- Покупатель (пустой):', buyer.getAllData());
+// ProductsCatalog
+catalog.setProducts(apiProducts.items);
+console.log('ProductsCatalog - товаров:', catalog.getProducts().length);
+console.log('getProductById:', catalog.getProductById(apiProducts.items[0].id)?.title);
+
+// Cart
+cart.addItem(apiProducts.items[0]);
+cart.addItem(apiProducts.items[1]);
+cart.addItem(apiProducts.items[2]);
+console.log('Cart - стоимость:', cart.getTotalPrice());
+console.log('Cart - количество:', cart.getTotalCount());
+cart.removeItem(apiProducts.items[1]);
+console.log('Cart - после удаления:', cart.getTotalCount());
+
+// BuyerModel
+buyer.setData({ email: 'test@mail.ru', phone: '+79991234567', address: 'Москва', payment: 'card' });
+console.log('BuyerModel - валидация:', buyer.validate());
+
+console.log('✅ Тестирование завершено\n');
 
 // ========== 2. НАСТРОЙКА РАБОТЫ С СЕРВЕРОМ ==========
 console.log('\n========== НАСТРОЙКА РАБОТЫ С СЕРВЕРОМ ==========');
 
-// Создаём экземпляр базового API с указанием базового URL сервера
-// URL сервера обычно указан в задании (например, http://localhost:3000)
-const baseApi = new Api(API_URL); // Замените на реальный URL
+const baseApi = new Api(API_URL); // 
 
 // Создаём экземпляр AppApi, передавая ему базовый API
 const appApi = new AppApi(baseApi);

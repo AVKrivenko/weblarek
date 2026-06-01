@@ -8,14 +8,14 @@ import { IApi, IProductsResponse, IOrderData, IOrderResponse } from '../types';
  */
 export class AppApi {
   // Поле хранит объект API с методами get и post
-  protected _api: IApi;
+  protected api: IApi;
 
   /**
    * Конструктор класса
    * @param api - объект, реализующий интерфейс IApi (умеет делать get и post запросы)
    */
   constructor(api: IApi) {
-    this._api = api;
+    this.api = api;
   }
 
   /**
@@ -25,7 +25,7 @@ export class AppApi {
   getProducts(): Promise<IProductsResponse> {
     // GET-запрос на эндпоинт /product/
     // Метод get принимает строку с URL и возвращает Promise с данными
-    return this._api.get<IProductsResponse>('/product');
+    return this.api.get<IProductsResponse>('/product');
   }
 
   /**
@@ -36,6 +36,6 @@ export class AppApi {
   postOrder(orderData: IOrderData): Promise<IOrderResponse> {
     // POST-запрос на эндпоинт /order/
     // Передаём данные заказа в теле запроса
-    return this._api.post<IOrderResponse>('/order', orderData);
+    return this.api.post<IOrderResponse>('/order', orderData);
   }
 }

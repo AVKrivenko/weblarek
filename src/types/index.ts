@@ -16,15 +16,16 @@ export interface IProduct {
   price: number | null;
 }
 
-export type TPayment = 'cash' | 'card' | 'online';
+export type TPayment = 'cash' | 'card';
 
 // Интерфейс покупателя
 export interface IBuyer {
-  payment: TPayment;
+  payment: TPayment | null;  
   email: string;
   phone: string;
   address: string;
 }
+
 
 /**
  * Ответ сервера при GET-запросе /product/
@@ -35,6 +36,8 @@ export interface IProductsResponse {
   items: IProduct[];  // массив товаров (переиспользуем существующий интерфейс)
 }
 
+
+export type TValidationErrors = Partial<Record<keyof IBuyer, string>>;
 /**
  * Данные для отправки заказа на сервер (POST /order/)
  * Объединяет данные покупателя и выбранные товары
