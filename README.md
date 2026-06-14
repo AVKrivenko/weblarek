@@ -242,7 +242,7 @@ validate(): Partial<Record<keyof IBuyer, string>> — валидация мож�
 
 ## Иерархия классов
 
-Component (базовый класс из base/Component)
+Component (базовый класс из base/Component/Views)
 
 - Card (абстрактный) — общая логика карточек
   - CatalogCard — карточка в каталоге
