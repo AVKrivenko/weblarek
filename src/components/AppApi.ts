@@ -1,41 +1,49 @@
-// src/components/AppApi.ts
 
-import { IApi, IProductsResponse, IOrderData, IOrderResponse } from '../types';
+import { Api } from './base/Api';
+import { IProduct, IOrderData, IOrderResponse } from '../types';
+import { EventEmitter } from './base/Events';
 
-/**
- * Класс для работы с API сервера «веб-ларёк»
- * Отвечает за получение товаров и отправку заказов
- */
-export class AppApi {
-  // Поле хранит объект API с методами get и post
-  protected api: IApi;
+export class AppApi extends Api {
+    private events: EventEmitter;
 
-  /**
-   * Конструктор класса
-   * @param api - объект, реализующий интерфейс IApi (умеет делать get и post запросы)
-   */
-  constructor(api: IApi) {
-    this.api = api;
-  }
+    constructor(baseUrl: string, events: EventEmitter, options?: RequestInit) {
+        super(baseUrl, options);
+        this.events = events;
+    }
 
-  /**
-   * Получение списка товаров с сервера
-   * @returns Promise с объектом, содержащим массив товаров и общее количество
-   */
-  getProducts(): Promise<IProductsResponse> {
-    // GET-запрос на эндпоинт /product/
-    // Метод get принимает строку с URL и возвращает Promise с данными
-    return this.api.get<IProductsResponse>('/product');
-  }
+    // Получить список товаров
+    async getProducts(): Promise<IProduct[]> {
+        try {
+            const response = await this.get<{ items: IProduct[] }>('/product');
+            this.events.emit('api:productsLoaded', response.items);
+            return response.items;
+        } catch (error) {
+            this.events.emit('api:error', { action: 'getProducts', error });
+            throw error;
+        }
+    }
 
-  /**
-   * Отправка заказа на сервер
-   * @param orderData - данные заказа (покупатель + выбранные товары + сумма)
-   * @returns Promise с подтверждением заказа (id и total)
-   */
-  postOrder(orderData: IOrderData): Promise<IOrderResponse> {
-    // POST-запрос на эндпоинт /order/
-    // Передаём данные заказа в теле запроса
-    return this.api.post<IOrderResponse>('/order', orderData);
-  }
+    // Получить один товар по ID
+    async getProductById(id: string): Promise<IProduct> {
+        try {
+            const product = await this.get<IProduct>(`/product/${id}`);
+            this.events.emit('api:productLoaded', product);
+            return product;
+        } catch (error) {
+            this.events.emit('api:error', { action: 'getProductById', error, id });
+            throw error;
+        }
+    }
+
+    // Отправить заказ
+    async postOrder(order: IOrderData): Promise<IOrderResponse> {
+        try {
+            const response = await this.post<IOrderResponse>('/order', order);
+            this.events.emit('api:orderSubmitted', response);
+            return response;
+        } catch (error) {
+            this.events.emit('api:error', { action: 'postOrder', error, order });
+            throw error;
+        }
+    }
 }

@@ -59,3 +59,5 @@ export interface IOrderResponse {
   id: string;      // уникальный идентификатор заказа
   total: number;   // сумма заказа (подтверждение)
 }
+
+
