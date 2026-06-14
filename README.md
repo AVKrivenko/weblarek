@@ -424,23 +424,3 @@ Component (базовый класс из base/Component)
 
 Выбран упрощённый подход — презентер написан в основном файле приложения без отдельного класса. 
 
-
-### Обрабатываемые события
-
- Источник | Событие | Действие презентера |
- ProductsCatalog | products:loaded | Отрисовать каталог 
- Cart | cart:changed | Обновить счётчик в шапке и корзину 
- BuyerModel | buyer:changed | Обновить состояние кнопок в формах 
- AppApi | api:error | Показать ошибку |
- CatalogCard | onClick | Открыть модалку с подробной карточкой 
- PreviewCard | onAddToCart | Добавить товар в корзину 
- BasketCard | onDelete | Удалить товар из корзины
- Header | onBasketClick | Открыть модалку с корзиной 
- Basket | onCheckout | Открыть форму заказа
- OrderForm | onSubmit | Перейти к форме контактов 
- OrderForm | onChange | Сохранить данные покупателя 
- ContactsForm | onSubmit | Отправить заказ на сервер 
- ContactsForm | onChange | Сохранить данные покупателя 
- Modal | onClose | Очистить форму, закрыть модалку 
- Success | onClose | Закрыть модалку 
-
