@@ -1,4 +1,4 @@
-import { Component } from '../base/Component';
+import { Component } from '../base/Component';  // ← добавить эту строку
 
 export abstract class Form<T> extends Component<T> {
     protected submitButton: HTMLButtonElement | null;
@@ -9,10 +9,6 @@ export abstract class Form<T> extends Component<T> {
         
         this.submitButton = this.container.querySelector('.button[type="submit"]');
         this.errorsContainer = this.container.querySelector('.form__errors');
-        
-        this.container.addEventListener('input', () => {
-            this.onInputChange();
-        });
         
         this.container.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -32,7 +28,6 @@ export abstract class Form<T> extends Component<T> {
         }
     }
 
-    protected abstract onInputChange(): void;
     protected abstract onSubmit(): void;
 
     render(data: Partial<T>): HTMLElement {

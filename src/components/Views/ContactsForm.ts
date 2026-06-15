@@ -9,60 +9,55 @@ export class ContactsForm extends Form<IContactsFormData> {
     private emailInput: HTMLInputElement | null;
     private phoneInput: HTMLInputElement | null;
     
-    private onChangeCallback: (data: Partial<IContactsFormData>) => void;
-    private onSubmitCallback: (data: IContactsFormData) => void;
+    private onChangeCallback: (field: keyof IContactsFormData, value: string) => void;
+    private onSubmitCallback: () => void;
 
     constructor(
         container: HTMLElement,
-        onChange: (data: Partial<IContactsFormData>) => void,
-        onSubmit: (data: IContactsFormData) => void
+        onChange: (field: keyof IContactsFormData, value: string) => void,
+        onSubmit: () => void
     ) {
         super(container);
         
         this.onChangeCallback = onChange;
         this.onSubmitCallback = onSubmit;
         
+        
         this.emailInput = this.container.querySelector('input[name="email"]');
         this.phoneInput = this.container.querySelector('input[name="phone"]');
-    }
-
-    private getFormData(): IContactsFormData {
-        return {
-            email: this.emailInput?.value || '',
-            phone: this.phoneInput?.value || ''
-        };
-    }
-
-    private validate(data: IContactsFormData): boolean {
-        const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email);
-        const phoneValid = data.phone.trim().length > 5;
-        return emailValid && phoneValid;
-    }
-
-    protected onInputChange(): void {
-        const data = this.getFormData();
-        const isValid = this.validate(data);
-        this.valid = isValid;
         
-        if (this.onChangeCallback) {
-            this.onChangeCallback(data);
+        if (this.emailInput) {
+            this.emailInput.addEventListener('input', () => {
+                this.onChangeCallback('email', this.emailInput?.value || '');
+            });
         }
         
-        if (!isValid) {
-            if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-                this.errors = 'Введите корректный email';
-            } else if (!data.phone || data.phone.trim().length < 6) {
-                this.errors = 'Введите номер телефона';
-            }
-        } else {
-            this.errors = '';
+        if (this.phoneInput) {
+            this.phoneInput.addEventListener('input', () => {
+                this.onChangeCallback('phone', this.phoneInput?.value || '');
+            });
+        }
+    }
+
+    set email(value: string) {
+        if (this.emailInput) {
+            this.emailInput.value = value;
+        }
+    }
+
+    set phone(value: string) {
+        if (this.phoneInput) {
+            this.phoneInput.value = value;
         }
     }
 
     protected onSubmit(): void {
-        const data = this.getFormData();
-        if (this.validate(data)) {
-            this.onSubmitCallback(data);
-        }
+        this.onSubmitCallback();
+    }
+
+    render(data: Partial<IContactsFormData>): HTMLElement {
+        if (data.email !== undefined) this.email = data.email;
+        if (data.phone !== undefined) this.phone = data.phone;
+        return this.container;
     }
 }

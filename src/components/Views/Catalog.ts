@@ -1,8 +1,7 @@
 import { Component } from '../base/Component';
-import { CatalogCard } from './CatalogCard';
 
 export interface ICatalogData {
-    cards: CatalogCard[];
+    items: HTMLElement[];   
 }
 
 export class Catalog extends Component<ICatalogData> {
@@ -13,20 +12,18 @@ export class Catalog extends Component<ICatalogData> {
         this.galleryElement = this.container.querySelector('.gallery');
     }
 
-    set cards(cards: CatalogCard[]) {
+    set items(elements: HTMLElement[]) {
         if (this.galleryElement) {
             this.galleryElement.innerHTML = '';
-            
-            cards.forEach(card => {
-                const cardElement = card.render({});
-                this.galleryElement?.appendChild(cardElement);
+            elements.forEach(el => {
+                this.galleryElement?.appendChild(el);
             });
         }
     }
 
     render(data: Partial<ICatalogData>): HTMLElement {
-        if (data.cards) {
-            this.cards = data.cards;
+        if (data.items) {
+            this.items = data.items;
         }
         return this.container;
     }

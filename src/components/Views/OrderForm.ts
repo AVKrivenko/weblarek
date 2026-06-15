@@ -10,13 +10,13 @@ export class OrderForm extends Form<IOrderFormData> {
     private cashButton: HTMLButtonElement | null;
     private addressInput: HTMLInputElement | null;
     
-    private onChangeCallback: (data: Partial<IOrderFormData>) => void;
-    private onSubmitCallback: (data: IOrderFormData) => void;
+    private onChangeCallback: (field: keyof IOrderFormData, value: string) => void;
+    private onSubmitCallback: () => void;
 
     constructor(
         container: HTMLElement,
-        onChange: (data: Partial<IOrderFormData>) => void,
-        onSubmit: (data: IOrderFormData) => void
+        onChange: (field: keyof IOrderFormData, value: string) => void,
+        onSubmit: () => void
     ) {
         super(container);
         
@@ -27,75 +27,77 @@ export class OrderForm extends Form<IOrderFormData> {
         this.cashButton = this.container.querySelector('button[name="cash"]');
         this.addressInput = this.container.querySelector('input[name="address"]');
         
+        // Обработчик для кнопки "Онлайн" — только эмит
         if (this.cardButton) {
             this.cardButton.addEventListener('click', () => {
-                this.setPayment('card');
-                this.onInputChange();
+                this.onChangeCallback('payment', 'card');
             });
         }
         
+        // Обработчик для кнопки "При получении" 
         if (this.cashButton) {
             this.cashButton.addEventListener('click', () => {
-                this.setPayment('cash');
-                this.onInputChange();
+                this.onChangeCallback('payment', 'cash');
+            });
+        }
+        
+        // Обработчик для поля адреса 
+        if (this.addressInput) {
+            this.addressInput.addEventListener('input', () => {
+                this.onChangeCallback('address', this.addressInput?.value || '');
             });
         }
     }
 
-    private setPayment(type: 'card' | 'cash') {
+    // Визуальное выделение кнопки (вызывается из презентера через сеттер payment)
+    private setPaymentVisual(type: 'card' | 'cash' | null) {
         if (this.cardButton && this.cashButton) {
             if (type === 'card') {
                 this.cardButton.classList.add('button_alt-active');
                 this.cashButton.classList.remove('button_alt-active');
-            } else {
+            } else if (type === 'cash') {
                 this.cashButton.classList.add('button_alt-active');
                 this.cardButton.classList.remove('button_alt-active');
+            } else {
+                this.cardButton.classList.remove('button_alt-active');
+                this.cashButton.classList.remove('button_alt-active');
             }
         }
     }
 
-    private getFormData(): IOrderFormData {
-        let payment: 'card' | 'cash' | null = null;
-        if (this.cardButton?.classList.contains('button_alt-active')) {
-            payment = 'card';
-        } else if (this.cashButton?.classList.contains('button_alt-active')) {
-            payment = 'cash';
+    // Сеттер для адреса (обновляет поле, вызывается из презентера)
+    set address(value: string) {
+        if (this.addressInput) {
+            this.addressInput.value = value;
         }
-        
-        return {
-            payment: payment,
-            address: this.addressInput?.value || ''
-        };
     }
 
-    private validate(data: IOrderFormData): boolean {
-        return !!(data.payment && data.address.trim());
+    // Сеттер для способа оплаты 
+    set payment(value: 'card' | 'cash' | null) {
+        this.setPaymentVisual(value);
     }
 
-    protected onInputChange(): void {
-        const data = this.getFormData();
-        const isValid = this.validate(data);
-        this.valid = isValid;
-        
-        if (this.onChangeCallback) {
-            this.onChangeCallback(data);
+    // Установить состояние валидности 
+    set valid(isValid: boolean) {
+        if (this.submitButton) {
+            this.submitButton.disabled = !isValid;
         }
-        
-        if (!isValid) {
-            if (!data.payment) {
-                this.errors = 'Выберите способ оплаты';
-            } else if (!data.address.trim()) {
-                this.errors = 'Введите адрес доставки';
-            }
-        } else {
-            this.errors = '';
+    }
+
+    // Показать ошибку
+    set errors(value: string) {
+        if (this.errorsContainer) {
+            this.errorsContainer.textContent = value;
         }
     }
 
     protected onSubmit(): void {
-        const data = this.getFormData();
-        if (this.validate(data)) {
-            this.onSubmitCallback(data);
-        }
+        this.onSubmitCallback();
+    }
+
+    render(data: Partial<IOrderFormData>): HTMLElement {
+        if (data.address !== undefined) this.address = data.address;
+        if (data.payment !== undefined) this.payment = data.payment;
+        return this.container;
     }
 }

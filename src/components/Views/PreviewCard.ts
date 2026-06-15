@@ -1,21 +1,21 @@
-import { Card, ICardData } from './Card';
+import { ProductCard, IProductCardData } from './ProductCard';
 
-export class PreviewCard extends Card<ICardData> {
+export interface IPreviewCardData extends IProductCardData {
+    description: string;
+}
+
+export class PreviewCard extends ProductCard<IPreviewCardData> {
     private descriptionElement: HTMLElement | null;
-    private imageElement: HTMLImageElement | null;
-    private categoryElement: HTMLElement | null;
 
-    constructor(container: HTMLElement, onAddToCart?: (id: string) => void) {
+    constructor(container: HTMLElement, onButtonClick?: () => void) {
         super(container);
         
         this.descriptionElement = this.container.querySelector('.card__text');
-        this.imageElement = this.container.querySelector('.card__image');
-        this.categoryElement = this.container.querySelector('.card__category');
         
-        if (this.button && onAddToCart) {
+        if (this.button && onButtonClick) {
             this.button.addEventListener('click', (e) => {
                 e.stopPropagation();
-                onAddToCart(this.id);
+                onButtonClick();
             });
         }
     }
@@ -26,25 +26,8 @@ export class PreviewCard extends Card<ICardData> {
         }
     }
 
-    set image(value: string) {
-        if (this.imageElement) {
-            this.setImage(this.imageElement, value, this.title);
-        }
-    }
-
-    set category(value: string) {
-        if (this.categoryElement) {
-            this.categoryElement.textContent = value;
-        }
-    }
-
-    render(data: Partial<ICardData>): HTMLElement {
+    render(data: Partial<IPreviewCardData>): HTMLElement {
         Object.assign(this, data);
         return this.container;
     }
-    setButtonText(text: string) {
-    if (this.button) {
-        this.button.textContent = text;
-    }
-}
 }

@@ -1,8 +1,7 @@
 import { Component } from '../base/Component';
-import { BasketCard } from './BasketCard';
 
 export interface IBasketData {
-    items: BasketCard[];
+    items: HTMLElement[]; 
     total: number;
 }
 
@@ -27,18 +26,19 @@ export class Basket extends Component<IBasketData> {
         }
     }
 
-    set items(cards: BasketCard[]) {
+    
+    set items(elements: HTMLElement[]) {
         if (this.listElement) {
             this.listElement.innerHTML = '';
             
-            if (cards.length === 0) {
+            if (elements.length === 0) {
                 const emptyMessage = document.createElement('li');
                 emptyMessage.textContent = 'Корзина пуста';
                 emptyMessage.style.textAlign = 'center';
                 this.listElement.appendChild(emptyMessage);
             } else {
-                cards.forEach(card => {
-                    this.listElement?.appendChild(card.render({}));
+                elements.forEach(el => {
+                    this.listElement?.appendChild(el);
                 });
             }
         }
