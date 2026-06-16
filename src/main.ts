@@ -20,19 +20,19 @@ import { ContactsForm } from './components/Views/ContactsForm';
 import { Modal } from './components/Views/Modal';
 import { Success } from './components/Views/Success';
 import { IProduct } from './types';
-import { CDN_URL } from './utils/constants';
-import { API_URL } from './utils/constants'; 
+import { CDN_URL, API_URL } from './utils/constants';
+
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================
 
-
 const events = new EventEmitter();
-const api = new AppApi(API_URL, events);  // ← используем API_URL
+const api = new AppApi(API_URL, events);
 
 const productsCatalog = new ProductsCatalog(events);
 const cart = new Cart(events);
 const buyer = new BuyerModel(events);
+
 // ============================================
 // ПОИСК КОНТЕЙНЕРОВ И ШАБЛОНОВ
 // ============================================
@@ -50,8 +50,7 @@ const contactsTemplate = document.getElementById('contacts') as HTMLTemplateElem
 const successTemplate = document.getElementById('success') as HTMLTemplateElement;
 
 // ============================================
-// СОЗДАНИЕ ПРЕДСТАВЛЕНИЙ (ОДНОКРАТНО)
-// ✅ ЗАМЕЧАНИЕ 2 ИСПРАВЛЕНО: все представления кроме карточек создаются один раз
+// СОЗДАНИЕ ПРЕДСТАВЛЕНИЙ 
 // ============================================
 
 const header = new Header(headerContainer, () => {
@@ -64,11 +63,49 @@ const modal = new Modal(modalContainer, () => {
     events.emit('ui:modalClose');
 });
 
-// Создаём формы и корзину один раз (будут перерисовываться через сеттеры)
-let orderForm: OrderForm | null = null;
-let contactsForm: ContactsForm | null = null;
-let basketContainer: HTMLElement | null = null;
-let basket: Basket | null = null;
+
+const basketContainer = basketTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
+const basket = new Basket(basketContainer, () => {
+    events.emit('ui:checkout');
+});
+
+const orderContainer = orderTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
+const orderForm = new OrderForm(
+    orderContainer,
+    (field, value) => {
+        // В колбэках только эмиты
+        if (field === 'payment') {
+            events.emit('buyer:paymentChange', { payment: value as 'card' | 'cash' });
+        } else if (field === 'address') {
+            events.emit('buyer:addressChange', { address: value });
+        }
+    },
+    () => {
+        events.emit('ui:nextStep');
+    }
+);
+
+
+const contactsContainer = contactsTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
+const contactsForm = new ContactsForm(
+    contactsContainer,
+    (field, value) => {
+        if (field === 'email') {
+            events.emit('buyer:emailChange', { email: value });
+        } else if (field === 'phone') {
+            events.emit('buyer:phoneChange', { phone: value });
+        }
+    },
+    () => {
+        events.emit('ui:submitOrder');
+    }
+);
+
+
+const successContainer = successTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
+const success = new Success(successContainer, () => {
+    modal.close();
+});
 
 // ============================================
 // ФУНКЦИИ СОЗДАНИЯ HTML-ЭЛЕМЕНТОВ КАРТОЧЕК
@@ -77,7 +114,6 @@ let basket: Basket | null = null;
 function createCatalogCardElement(product: IProduct): HTMLElement {
     const container = catalogCardTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
     
-    // ✅ ЗАМЕЧАНИЕ 3 (косвенно): колбэк без параметра, ID зашит
     const card = new CatalogCard(container, () => {
         events.emit('ui:productSelect', { id: product.id });
     });
@@ -85,7 +121,7 @@ function createCatalogCardElement(product: IProduct): HTMLElement {
     card.title = product.title;
     card.price = product.price;
     card.category = product.category;
-    card.image = product.image ? `${CDN_URL}${product.image}` : '';
+    card.image = product.image ? `${CDN_URL}/${product.image}` : '';
     
     return card.render({});
 }
@@ -93,7 +129,6 @@ function createCatalogCardElement(product: IProduct): HTMLElement {
 function createBasketCardElement(product: IProduct, index: number): HTMLElement {
     const container = basketCardTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
     
-    // ✅ ЗАМЕЧАНИЕ 1 (косвенно): колбэк без параметра, ID зашит
     const card = new BasketCard(container, () => {
         events.emit('ui:removeFromCart', { id: product.id });
     });
@@ -115,8 +150,7 @@ events.on('products:loaded', (data: { products: IProduct[] }) => {
     catalog.items = items;
 });
 
-// ✅ ЗАМЕЧАНИЕ 3 ИСПРАВЛЕНО: обработка выбранного товара происходит здесь,
-//    а в ui:productSelect только работа с моделью
+
 events.on('product:selected', (data: { product: IProduct | null }) => {
     const product = data.product;
     if (!product) return;
@@ -124,7 +158,6 @@ events.on('product:selected', (data: { product: IProduct | null }) => {
     const container = previewCardTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
     const isInCart = cart.hasItem(product.id);
     
-    // ✅ ЗАМЕЧАНИЕ 1 ИСПРАВЛЕНО: единый колбэк для кнопки
     const card = new PreviewCard(container, () => {
         if (cart.hasItem(product.id)) {
             events.emit('ui:removeFromCart', { id: product.id });
@@ -139,7 +172,7 @@ events.on('product:selected', (data: { product: IProduct | null }) => {
     card.title = product.title;
     card.price = product.price;
     card.category = product.category;
-    card.image = product.image ? `${CDN_URL}${product.image}` : '';
+    card.image = product.image ? `${CDN_URL}/${product.image}` : '';
     card.description = product.description;
     card.setButtonText(isInCart ? 'Удалить из корзины' : 'Купить');
     
@@ -147,64 +180,38 @@ events.on('product:selected', (data: { product: IProduct | null }) => {
     modal.open();
 });
 
-// ✅ ЗАМЕЧАНИЕ 4 ИСПРАВЛЕНО: корзина обновляется в событии изменения модели,
-//    а не при открытии
+
+
 events.on('cart:changed', () => {
-    // Обновляем счётчик в шапке
     header.counter = cart.getTotalCount();
     
-    // Обновляем корзину, если она создана и открыта
-    if (basket && modal.isOpen()) {
-        const items = cart.getItems().map((item, index) => 
-            createBasketCardElement(item.product, index + 1)
-        );
-        basket.items = items;
-        basket.total = cart.getTotalPrice();
-        basket.valid = items.length > 0;
-    }
+    const items = cart.getItems().map((item, index) => 
+        createBasketCardElement(item.product, index + 1)
+    );
+    basket.items = items;
+    basket.total = cart.getTotalPrice();
+    basket.valid = items.length > 0;
 });
 
-// ✅ ЗАМЕЧАНИЕ 6 ИСПРАВЛЕНО: формы перерисовываются в событии изменения модели
 events.on('buyer:changed', () => {
-    const isFirstStepValid = buyer.isFirstStepValid();
-    const isSecondStepValid = buyer.isSecondStepValid();
+    const errors = buyer.validate();
+    const data = buyer.getAllData();
     
-    // Обновляем форму заказа (шаг 1)
     if (orderForm) {
-        orderForm.address = buyer.address;
-        orderForm.payment = buyer.payment;
-        orderForm.valid = isFirstStepValid;
-        
-        if (!isFirstStepValid) {
-            if (!buyer.payment) orderForm.errors = 'Выберите способ оплаты';
-            else if (!buyer.address?.trim()) orderForm.errors = 'Введите адрес доставки';
-            else orderForm.errors = '';
-        } else {
-            orderForm.errors = '';
-        }
+        orderForm.address = data.address;
+        orderForm.payment = data.payment;
+        orderForm.valid = !errors.payment && !errors.address;
+        orderForm.errors = errors.payment || errors.address || '';
     }
     
-    // Обновляем форму контактов (шаг 2)
     if (contactsForm) {
-        contactsForm.email = buyer.email;
-        contactsForm.phone = buyer.phone;
-        contactsForm.valid = isSecondStepValid;
-        
-        if (!isSecondStepValid) {
-            if (!buyer.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyer.email)) {
-                contactsForm.errors = 'Введите корректный email';
-            } else if (!buyer.phone || buyer.phone.trim().length < 6) {
-                contactsForm.errors = 'Введите номер телефона';
-            } else {
-                contactsForm.errors = '';
-            }
-        } else {
-            contactsForm.errors = '';
-        }
+        contactsForm.email = data.email;
+        contactsForm.phone = data.phone;
+        contactsForm.valid = !errors.email && !errors.phone;
+        contactsForm.errors = errors.email || errors.phone || '';
     }
 });
 
-// Ошибка API
 events.on('api:error', (data: { action: string; error: unknown }) => {
     console.error('API Error:', data.action, data.error);
 });
@@ -213,7 +220,6 @@ events.on('api:error', (data: { action: string; error: unknown }) => {
 // ОБРАБОТЧИКИ СОБЫТИЙ ОТ VIEW (UI)
 // ============================================
 
-// ✅ ЗАМЕЧАНИЕ 3 ИСПРАВЛЕНО: здесь только работа с моделью, без отображения
 events.on('ui:productSelect', (data: { id: string }) => {
     const product = productsCatalog.getProductById(data.id);
     if (product) {
@@ -221,7 +227,6 @@ events.on('ui:productSelect', (data: { id: string }) => {
     }
 });
 
-// ✅ ЗАМЕЧАНИЕ 1 ИСПРАВЛЕНО: события добавляют/удаляют товар
 events.on('ui:addToCart', (data: { id: string }) => {
     const product = productsCatalog.getProductById(data.id);
     if (product && product.price !== null) {
@@ -234,90 +239,43 @@ events.on('ui:removeFromCart', (data: { id: string }) => {
     cart.removeItem(data.id);
 });
 
-// ✅ ЗАМЕЧАНИЕ 4 ИСПРАВЛЕНО: при открытии корзины только берём актуальный контейнер
+
+
 events.on('ui:basketClick', () => {
-    if (!basketContainer) {
-        basketContainer = basketTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
-        basket = new Basket(basketContainer, () => {
-            events.emit('ui:checkout');
-        });
-    }
-    
-    // Берём актуальное состояние (данные уже обновлены в cart:changed)
-    const items = cart.getItems().map((item, index) => 
-        createBasketCardElement(item.product, index + 1)
-    );
-    if (basket) {
-        basket.items = items;
-        basket.total = cart.getTotalPrice();
-        basket.valid = items.length > 0;
-    }
-    
     modal.content = basketContainer;
     modal.open();
 });
 
-// Оформление заказа
 events.on('ui:checkout', () => {
-    if (!orderForm) {
-        const container = orderTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
-        // ✅ ЗАМЕЧАНИЕ 5 ИСПРАВЛЕНО: в колбэках только эмиты
-        orderForm = new OrderForm(
-            container,
-            (field, value) => {
-                if (field === 'payment') {
-                    events.emit('buyer:paymentChange', { payment: value as 'card' | 'cash' });
-                } else if (field === 'address') {
-                    events.emit('buyer:addressChange', { address: value });
-                }
-            },
-            () => {
-                events.emit('ui:nextStep');
-            }
-        );
-    }
+    const data = buyer.getAllData();
+    orderForm.address = data.address;
+    orderForm.payment = data.payment;
     
-    // Берём пустой рендер и добавляем в модалку
-    modal.content = orderForm.render({});
+    modal.content = orderContainer;
     modal.open();
 });
 
-// Переход ко второму шагу
 events.on('ui:nextStep', () => {
-    if (!contactsForm) {
-        const container = contactsTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
-        // ✅ ЗАМЕЧАНИЕ 5 ИСПРАВЛЕНО: в колбэках только эмиты
-        contactsForm = new ContactsForm(
-            container,
-            (field, value) => {
-                if (field === 'email') {
-                    events.emit('buyer:emailChange', { email: value });
-                } else if (field === 'phone') {
-                    events.emit('buyer:phoneChange', { phone: value });
-                }
-            },
-            () => {
-                events.emit('ui:submitOrder');
-            }
-        );
-    }
+    const data = buyer.getAllData();
+    contactsForm.email = data.email;
+    contactsForm.phone = data.phone;
     
-    // Берём пустой рендер и добавляем в модалку
-    modal.content = contactsForm.render({});
+    modal.content = contactsContainer;
 });
 
-// Отправка заказа
 events.on('ui:submitOrder', async () => {
-    if (!buyer.payment) {
+    const data = buyer.getAllData();
+    
+    if (!data.payment) {
         console.error('Способ оплаты не выбран');
         return;
     }
     
     const orderData = {
-        payment: buyer.payment,
-        address: buyer.address,
-        email: buyer.email,
-        phone: buyer.phone,
+        payment: data.payment,
+        address: data.address,
+        email: data.email,
+        phone: data.phone,
         items: cart.getItemIds(),
         total: cart.getTotalPrice()
     };
@@ -325,13 +283,8 @@ events.on('ui:submitOrder', async () => {
     try {
         const response = await api.postOrder(orderData);
         
-        const container = successTemplate.content.firstElementChild?.cloneNode(true) as HTMLElement;
-        const success = new Success(container, () => {
-            modal.close();
-        });
-        
         success.total = response.total;
-        modal.content = success.render({});
+        modal.content = successContainer;
         
         cart.clear();
         buyer.clear();
@@ -341,24 +294,27 @@ events.on('ui:submitOrder', async () => {
     }
 });
 
-// ✅ ЗАМЕЧАНИЕ 5 ИСПРАВЛЕНО: обработчики эмитов от форм
+// Обработчики эмитов от форм
 events.on('buyer:paymentChange', (data: { payment: 'card' | 'cash' }) => {
-    buyer.setPayment(data.payment);
+    const currentData = buyer.getAllData();
+    buyer.setData({ ...currentData, payment: data.payment });
 });
 
 events.on('buyer:addressChange', (data: { address: string }) => {
-    buyer.setAddress(data.address);
+    const currentData = buyer.getAllData();
+    buyer.setData({ ...currentData, address: data.address });
 });
 
 events.on('buyer:emailChange', (data: { email: string }) => {
-    buyer.setEmail(data.email);
+    const currentData = buyer.getAllData();
+    buyer.setData({ ...currentData, email: data.email });
 });
 
 events.on('buyer:phoneChange', (data: { phone: string }) => {
-    buyer.setPhone(data.phone);
+    const currentData = buyer.getAllData();
+    buyer.setData({ ...currentData, phone: data.phone });
 });
 
-// Закрытие модального окна
 events.on('ui:modalClose', () => {
     // Ничего не делаем
 });

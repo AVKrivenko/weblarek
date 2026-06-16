@@ -259,37 +259,38 @@ Component (базовый класс из base/Component/Views)
   - `Modal` — модальное окно
   - `Header` — шапка сайта
   - `Success` — уведомление об успехе
+
+---
+
 ## Описание классов
 
 ### 1. Card (абстрактный)
 
-Базовый класс для всех карточек товара. Содержит только общие поля: название и цена.
+Базовый класс для всех карточек. Содержит только общие поля: **название** и **цену**.
 
 **Поля:**
-- `titleElement: HTMLElement | null` — элемент с названием товара
+- `titleElement: HTMLElement | null` — элемент с названием
 - `priceElement: HTMLElement | null` — элемент с ценой
 
 **Методы:**
 - `set title(value: string)` — устанавливает название
 - `set price(value: number | null)` — устанавливает цену (при null выводит «Бесценно»)
-- `render(data: Partial<T>): HTMLElement` — абстрактный метод, заполняет карточку данными
 
 ---
 
 ### 2. ProductCard (абстрактный)
 
-Промежуточный класс для карточек, у которых есть картинка, категория и кнопка. Наследуется от `Card`.
+Промежуточный класс для карточек с картинкой, категорией и кнопкой. Наследуется от `Card`.
 
 **Поля:**
-- `imageElement: HTMLImageElement | null` — элемент картинки
-- `categoryElement: HTMLElement | null` — элемент категории
-- `button: HTMLButtonElement | null` — кнопка действия
+- `imageElement: HTMLImageElement | null`
+- `categoryElement: HTMLElement | null`
+- `button: HTMLButtonElement | null`
 
 **Методы:**
 - `set image(value: string)` — устанавливает картинку
 - `set category(value: string)` — устанавливает категорию
 - `setButtonText(text: string)` — меняет текст на кнопке
-- `set price(value: number | null)` — переопределён, блокирует кнопку если цена null
 
 ---
 
@@ -298,40 +299,34 @@ Component (базовый класс из base/Component/Views)
 Карточка товара на главной странице. Наследуется от `ProductCard`.
 
 **Особенности:**
-- При клике на карточку вызывает колбэк без параметра
-- Переопределяет `set category` для добавления стилизации
+- При клике вызывает колбэк без параметра
+- ID товара "зашит" в колбэк при создании в презентере
 
-**Генерирует событие:** через колбэк `onClick()` → презентер эмитит `ui:productSelect`
+**Событие:** `ui:productSelect` (через презентер)
 
 ---
 
 ### 4. PreviewCard
 
-Подробная карточка товара для отображения в модальном окне. Наследуется от `ProductCard`.
-
-**Дополнительные поля:**
-- `descriptionElement: HTMLElement | null` — элемент с описанием
+Подробная карточка в модальном окне. Наследуется от `ProductCard`.
 
 **Особенности:**
 - Единый колбэк для кнопки (без разделения на «Купить» и «Удалить»)
 - Текст кнопки меняется через `setButtonText()`
 
-**Генерирует событие:** через колбэк `onButtonClick()` → презентер проверяет наличие в корзине и эмитит `ui:addToCart` или `ui:removeFromCart`
+**События:** `ui:addToCart` или `ui:removeFromCart` (в зависимости от состояния корзины)
 
 ---
 
 ### 5. BasketCard
 
-Карточка товара внутри корзины. Наследуется от `Card`.
+Карточка товара в корзине. Наследуется от `Card`.
 
 **Поля:**
-- `indexElement: HTMLElement | null` — элемент с порядковым номером
+- `indexElement: HTMLElement | null` — порядковый номер
 - `deleteButton: HTMLButtonElement | null` — кнопка удаления
 
-**Методы:**
-- `set index(value: number)` — устанавливает порядковый номер
-
-**Генерирует событие:** через колбэк `onDelete()` → презентер эмитит `ui:removeFromCart`
+**Событие:** `ui:removeFromCart`
 
 ---
 
@@ -340,143 +335,125 @@ Component (базовый класс из base/Component/Views)
 Базовый класс для всех форм.
 
 **Поля:**
-- `submitButton: HTMLButtonElement | null` — кнопка отправки формы
-- `errorsContainer: HTMLElement | null` — блок для вывода текста ошибки
+- `submitButton: HTMLButtonElement | null`
+- `errorsContainer: HTMLElement | null`
 
 **Методы:**
-- `set valid(isValid: boolean)` — блокирует или разблокирует кнопку
-- `set errors(value: string)` — показывает ошибку под формой
-- `onSubmit(): void` — абстрактный метод, вызывается при отправке
+- `set valid(isValid: boolean)` — блокирует/разблокирует кнопку
+- `set errors(value: string)` — показывает ошибку
 
 ---
 
 ### 7. OrderForm
 
-Форма первого шага оформления (способ оплаты + адрес). Наследуется от `Form`.
+Форма первого шага (способ оплаты + адрес). Наследуется от `Form`.
 
-**Поля:**
-- `cardButton: HTMLButtonElement | null` — кнопка «Онлайн»
-- `cashButton: HTMLButtonElement | null` — кнопка «При получении»
-- `addressInput: HTMLInputElement | null` — поле ввода адреса
-
-**Методы:**
+**Сеттеры:**
 - `set address(value: string)` — обновляет поле адреса
-- `set payment(value: 'card' | 'cash' | null)` — обновляет визуальное выделение кнопки
+- `set payment(value: 'card' | 'cash' | null)` — обновляет визуал кнопок
 
-**Генерирует события:** через колбэки `onChange` с именем поля и значением
+**События:** `buyer:paymentChange`, `buyer:addressChange`
 
 ---
 
 ### 8. ContactsForm
 
-Форма второго шага оформления (email + телефон). Наследуется от `Form`.
+Форма второго шага (email + телефон). Наследуется от `Form`.
 
-**Поля:**
-- `emailInput: HTMLInputElement | null` — поле email
-- `phoneInput: HTMLInputElement | null` — поле телефона
+**Сеттеры:**
+- `set email(value: string)`
+- `set phone(value: string)`
 
-**Методы:**
-- `set email(value: string)` — обновляет поле email
-- `set phone(value: string)` — обновляет поле телефона
-
-**Генерирует события:** через колбэки `onChange` с именем поля и значением
+**События:** `buyer:emailChange`, `buyer:phoneChange`
 
 ---
 
 ### 9. Basket
 
-Отображает корзину целиком: список товаров, общую сумму и кнопку оформления.
+Корзина целиком.
 
-**Поля:**
-- `listElement: HTMLElement | null` — элемент `ul` для списка карточек
-- `totalElement: HTMLElement | null` — элемент с общей суммой
-- `buttonElement: HTMLButtonElement | null` — кнопка «Оформить»
+**Сеттеры:**
+- `set items(elements: HTMLElement[])` — принимает готовые HTML-элементы
+- `set total(value: number)`
+- `set valid(isValid: boolean)`
 
-**Методы:**
-- `set items(elements: HTMLElement[])` — очищает список и добавляет готовые HTML-элементы
-- `set total(value: number)` — обновляет общую стоимость
-- `set valid(isValid: boolean)` — блокирует кнопку если корзина пуста
-
-**Генерирует событие:** через колбэк `onCheckout()` → презентер эмитит `ui:checkout`
+**Событие:** `ui:checkout`
 
 ---
 
 ### 10. Catalog
 
-Контейнер для всех карточек на главной странице.
+Контейнер для карточек на главной.
 
-**Поля:**
-- `galleryElement: HTMLElement | null` — элемент `main` с классом `gallery`
-
-**Методы:**
-- `set items(elements: HTMLElement[])` — очищает галерею и добавляет готовые HTML-элементы
+**Сеттер:**
+- `set items(elements: HTMLElement[])` — принимает готовые HTML-элементы
 
 ---
 
 ### 11. Modal
 
-Модальное окно-контейнер. Управляет открытием, закрытием и сменой содержимого.
-
-**Поля:**
-- `closeButton: HTMLButtonElement | null` — кнопка-крестик
-- `contentContainer: HTMLElement | null` — контейнер для динамического содержимого
+Модальное окно-контейнер.
 
 **Методы:**
-- `open(): void` — показывает модальное окно
-- `close(): void` — скрывает модальное окно
-- `isOpen(): boolean` — проверяет, открыто ли окно
-- `set content(value: HTMLElement)` — заменяет содержимое
-
-**Генерирует событие:** через колбэк `onClose()` → презентер эмитит `ui:modalClose`
+- `open()` — открывает
+- `close()` — закрывает
+- `isOpen(): boolean` — проверяет, открыто ли
 
 ---
 
 ### 12. Header
 
-Шапка сайта с логотипом и счётчиком товаров в корзине.
+Шапка сайта.
 
-**Поля:**
-- `basketCounter: HTMLElement | null` — элемент с числом товаров
-- `basketButton: HTMLButtonElement | null` — кнопка-иконка корзины
+**Сеттер:**
+- `set counter(value: number)` — обновляет счётчик
 
-**Методы:**
-- `set counter(value: number)` — обновляет отображение счётчика
-
-**Генерирует событие:** через колбэк `onBasketClick()` → презентер эмитит `ui:basketClick`
+**Событие:** `ui:basketClick`
 
 ---
 
 ### 13. Success
 
-Уведомление об успешном оформлении заказа.
+Уведомление об успешном заказе.
 
-**Поля:**
-- `descriptionElement: HTMLElement | null` — текст «Списано X синапсов»
-- `closeButton: HTMLButtonElement | null` — кнопка «За новыми покупками»
+**Сеттер:**
+- `set total(value: number)` — обновляет сумму
 
-**Методы:**
-- `set total(value: number)` — обновляет текст с суммой
+---
 
-**Генерирует событие:** через колбэк `onClose()` → презентер эмитит `ui:modalClose`
+## Валидация
+
+Валидация данных находится в модели `BuyerModel` в методе `validate(): TValidationErrors`.
+
+Презентер получает ошибки из модели и передаёт их в формы через сеттер `set errors()`.
 
 ---
 
 ## Таблица событий
 
+### События от View (UI)
+
 | Событие | Источник | Данные | Действие презентера |
 |---------|----------|--------|---------------------|
 | `ui:productSelect` | CatalogCard | `{ id: string }` | Выбрать товар в модели |
-| `ui:addToCart` | PreviewCard | `{ id: string }` | Добавить товар в корзину |
-| `ui:removeFromCart` | BasketCard / PreviewCard | `{ id: string }` | Удалить товар из корзины |
+| `ui:addToCart` | PreviewCard | `{ id: string }` | Добавить товар |
+| `ui:removeFromCart` | BasketCard | `{ id: string }` | Удалить товар |
 | `ui:basketClick` | Header | `{}` | Открыть корзину |
 | `ui:checkout` | Basket | `{}` | Открыть форму заказа |
 | `ui:nextStep` | OrderForm | `{}` | Перейти к форме контактов |
 | `ui:submitOrder` | ContactsForm | `{}` | Отправить заказ |
-| `ui:modalClose` | Modal / Success | `{}` | Закрыть модальное окно |
+| `ui:modalClose` | Modal | `{}` | Закрыть модалку |
 
----
+### События от форм (через колбэки)
 
-## События от моделей
+| Событие | Данные | Действие презентера |
+|---------|--------|---------------------|
+| `buyer:paymentChange` | `{ payment: 'card' \| 'cash' }` | Обновить модель |
+| `buyer:addressChange` | `{ address: string }` | Обновить модель |
+| `buyer:emailChange` | `{ email: string }` | Обновить модель |
+| `buyer:phoneChange` | `{ phone: string }` | Обновить модель |
+
+### События от моделей
 
 | Событие | Источник | Данные | Действие презентера |
 |---------|----------|--------|---------------------|
@@ -484,6 +461,27 @@ Component (базовый класс из base/Component/Views)
 | `product:selected` | ProductsCatalog | `{ product: IProduct \| null }` | Открыть превью |
 | `cart:changed` | Cart | `{}` | Обновить счётчик и корзину |
 | `buyer:changed` | BuyerModel | `{}` | Обновить формы |
+
+---
+
+## Архитектура MVP
+
+- **Model** — данные и логика (валидация в `BuyerModel.validate()`)
+- **View** — отображение (классы из этого документа)
+- **Presenter** — связывает Model и View (main.ts)
+
+### Принципы:
+- View не хранит данные (нет геттеров)
+- Колбэки в View не имеют параметров
+- Ошибки берутся из модели через `validate()`
+- Презентер не создаёт тексты ошибок
+- Все представления (кроме карточек) создаются один раз при старте
+
+---
+
+## Известные проблемы
+
+Изображения товаров могут не отображаться, если CDN сервер не возвращает файлы по указанным путям. Функциональность приложения от этого не страдает.
 
 ## Презентер
 
